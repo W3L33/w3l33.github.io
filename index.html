@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>WeLee</title>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0d0d0d;
+    overflow: hidden;
+    font-family: monospace;
+    height: 100%;
+  }
+
+  canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 0;
+  }
+
+  /* Overlay principal */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .content {
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 40px 60px;
+    border-radius: 12px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 40px rgba(0,255,136,0.15);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 48px;
+    letter-spacing: 4px;
+    color: #ffffff;
+  }
+
+  h2 {
+    margin: 15px 0 25px;
+    font-size: 18px;
+    font-weight: normal;
+    color: #00ff88;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 10px 22px;
+    border: 1px solid #00ff88;
+    color: #00ff88;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  .btn:hover {
+    background: #00ff88;
+    color: #0d0d0d;
+  }
+
+  /* Firma */
+  .signature {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    color: #ffffff;
+    font-size: 13px;
+    opacity: 0.6;
+    letter-spacing: 2px;
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="overlay">
+  <div class="content">
+    <h1>WeLee</h1>
+    <h2>Fr-Bck Dev · Code Techie</h2>
+
+    <div class="buttons">
+      <a href="#" class="btn">Proyects</a>
+      <a href="#" class="btn">GitHub</a>
+      <a href="#" class="btn">Contact</a>
+    </div>
+  </div>
+</div>
+
+<div class="signature">By WeLee</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const fontSize = 15;
+ctx.font = fontSize + "px monospace";
+
+// ====== SNIPPETS CON FRAMEWORKS ======
+const snippets = [
+  {
+    language: "python",
+    color: "#00ff88",
+    keywords: ["def", "return", "if", "raise", "import", "from"],
+    code: `from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route("/api/users")
+def get_users():
+    if not users:
+        raise Exception("No users")
+    return jsonify(users)`
+  },
+  {
+    language: "java",
+    color: "#f89820",
+    keywords: ["public", "class", "return", "new"],
+    code: `@RestController
+public class UserController {
+
+    @GetMapping("/users")
+    public List<User> getUsers() {
+        return service.findAll();
+    }
+}`
+  },
+  {
+    language: "cpp",
+    color: "#5599ff",
+    keywords: ["return", "const", "auto", "if"],
+    code: `#include <vector>
+#include <ranges>
+
+auto filter_even(const std::vector<int>& data) {
+    return data | std::views::filter([](int n){ return n % 2 == 0; });
+}`
+  },
+  {
+    language: "js",
+    color: "#f7df1e",
+    keywords: ["const", "async", "await", "return", "if"],
+    code: `import axios from "axios";
+
+export async function fetchUsers() {
+    const res = await axios.get("/api/users");
+    return res.data;
+}`
+  }
+];
+
+// ====== ANIMACIÓN ======
+let snippetIndex = 0;
+let charIndex = 0;
+let x = 30;
+let y = 50;
+
+function drawHighlightedLine(line, startX, startY, snippet) {
+  const words = line.split(/(\s+)/);
+  let offsetX = startX;
+
+  words.forEach(word => {
+    if (snippet.keywords.includes(word.trim())) {
+      ctx.fillStyle = snippet.color;
+    } else {
+      ctx.fillStyle = "#cccccc";
+    }
+    ctx.fillText(word, offsetX, startY);
+    offsetX += ctx.measureText(word).width;
+  });
+}
+
+function drawCode() {
+  ctx.fillStyle = "rgba(13,13,13,0.18)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const snippet = snippets[snippetIndex];
+  const partial = snippet.code.substring(0, charIndex);
+  const lines = partial.split("\n");
+
+  lines.forEach((line, i) => {
+    drawHighlightedLine(line, x, y + i * fontSize, snippet);
+  });
+
+  charIndex++;
+
+  if (charIndex > snippet.code.length) {
+    charIndex = 0;
+    snippetIndex = (snippetIndex + 1) % snippets.length;
+    x = Math.random() * (canvas.width - 420);
+    y = Math.random() * (canvas.height - 240) + 50;
+  }
+}
+
+setInterval(drawCode, 55);
+
+window.onresize = () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+};
+</script>
+</body>
+</html>
