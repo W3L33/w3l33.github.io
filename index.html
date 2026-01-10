@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>WeLee</title>
-
 <style>
   html, body {
     margin: 0;
@@ -13,15 +12,12 @@
     font-family: monospace;
     height: 100%;
   }
-
   canvas {
     position: fixed;
     top: 0;
     left: 0;
     z-index: 0;
   }
-
-  /* Overlay principal */
   .overlay {
     position: absolute;
     inset: 0;
@@ -32,7 +28,6 @@
     text-align: center;
     pointer-events: none;
   }
-
   .content {
     pointer-events: auto;
     background: rgba(0, 0, 0, 0.45);
@@ -41,28 +36,24 @@
     backdrop-filter: blur(6px);
     box-shadow: 0 0 40px rgba(0,255,136,0.15);
   }
-
   h1 {
     margin: 0;
     font-size: 48px;
     letter-spacing: 4px;
     color: #ffffff;
   }
-
   h2 {
     margin: 15px 0 25px;
     font-size: 18px;
     font-weight: normal;
     color: #00ff88;
   }
-
   .buttons {
     display: flex;
     gap: 15px;
     justify-content: center;
     flex-wrap: wrap;
   }
-
   .btn {
     padding: 10px 22px;
     border: 1px solid #00ff88;
@@ -72,13 +63,10 @@
     font-size: 14px;
     transition: all 0.3s ease;
   }
-
   .btn:hover {
     background: #00ff88;
     color: #0d0d0d;
   }
-
-  /* Firma */
   .signature {
     position: absolute;
     bottom: 20px;
@@ -92,14 +80,11 @@
 </style>
 </head>
 <body>
-
 <canvas id="canvas"></canvas>
-
 <div class="overlay">
   <div class="content">
     <h1>WeLee</h1>
     <h2>Fr-Bck Dev · Code Techie</h2>
-
     <div class="buttons">
       <a href="#" class="btn">Public</a>
       <a href="#" class="btn">Private</a>
@@ -113,14 +98,10 @@
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
-
 const fontSize = 15;
 ctx.font = fontSize + "px monospace";
-
-// ====== SNIPPETS CON FRAMEWORKS ======
 const snippets = [
   {
     language: "python",
@@ -172,17 +153,13 @@ export async function fetchUsers() {
 }`
   }
 ];
-
-// ====== ANIMACIÓN ======
 let snippetIndex = 0;
 let charIndex = 0;
 let x = 30;
 let y = 50;
-
 function drawHighlightedLine(line, startX, startY, snippet) {
   const words = line.split(/(\s+)/);
   let offsetX = startX;
-
   words.forEach(word => {
     if (snippet.keywords.includes(word.trim())) {
       ctx.fillStyle = snippet.color;
@@ -193,11 +170,9 @@ function drawHighlightedLine(line, startX, startY, snippet) {
     offsetX += ctx.measureText(word).width;
   });
 }
-
 function drawCode() {
   ctx.fillStyle = "rgba(13,13,13,0.18)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   const snippet = snippets[snippetIndex];
   const partial = snippet.code.substring(0, charIndex);
   const lines = partial.split("\n");
@@ -226,3 +201,4 @@ window.onresize = () => {
 </body>
 
 </html>
+
