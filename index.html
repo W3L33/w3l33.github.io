@@ -1,204 +1,152 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>WeLee</title>
-<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: #0d0d0d;
-    overflow: hidden;
-    font-family: monospace;
-    height: 100%;
-  }
-  canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 0;
-  }
-  .overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    pointer-events: none;
-  }
-  .content {
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.45);
-    padding: 40px 60px;
-    border-radius: 12px;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 0 40px rgba(0,255,136,0.15);
-  }
-  h1 {
-    margin: 0;
-    font-size: 48px;
-    letter-spacing: 4px;
-    color: #ffffff;
-  }
-  h2 {
-    margin: 15px 0 25px;
-    font-size: 18px;
-    font-weight: normal;
-    color: #00ff88;
-  }
-  .buttons {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  .btn {
-    padding: 10px 22px;
-    border: 1px solid #00ff88;
-    color: #00ff88;
-    text-decoration: none;
-    border-radius: 20px;
-    font-size: 14px;
-    transition: all 0.3s ease;
-  }
-  .btn:hover {
-    background: #00ff88;
-    color: #0d0d0d;
-  }
-  .signature {
-    position: absolute;
-    bottom: 20px;
-    right: 30px;
-    color: #ffffff;
-    font-size: 13px;
-    opacity: 0.6;
-    letter-spacing: 2px;
-    z-index: 3;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>WeLee</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <canvas id="canvas"></canvas>
-<div class="overlay">
-  <div class="content">
-    <h1>WeLee</h1>
-    <h2>Fr-Bck Dev · Code Techie</h2>
-    <div class="buttons">
-      <a href="#" class="btn">Public</a>
-      <a href="#" class="btn">Private</a>
-      <a href="#" class="btn">Contact</a>
-    </div>
+
+<div id="icons" class="glass-buttons">
+  <div class="glass-text">
+    <h1>WILBERTH ACOSTA</h1>
+<p>Full Stack DEV</p>
+  </div>
+
+  <div class="glass-actions">
+ <button class="glass-btn">PRIVATE</button>
+
+<a href="https://w3l33.github.io/cv" class="glass-btn-link">   
+    <button class="glass-btn">PUBLIC</button>
+</a>
+    <button class="glass-btn">CONTACT</button>
   </div>
 </div>
 
-<div class="signature">By WeLee</div>
 
-<script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-const fontSize = 15;
-ctx.font = fontSize + "px monospace";
-const snippets = [
-  {
-    language: "python",
-    color: "#00ff88",
-    keywords: ["def", "return", "if", "raise", "import", "from"],
-    code: `from flask import Flask, jsonify
+<!-- ===== CONTACT MODAL ===== -->
+<div id="contact-modal" class="glass-modal hidden">
+  <div class="glass-modal-content">
+    <h2>Contacto</h2>
 
-app = Flask(__name__)
+    <form id="contact-form">
+      <input id="contact-name" name="from_name" type="text" placeholder="Nombre" required>
+      <input name="reply_to" type="email" placeholder="Correo" required>
+      <textarea name="message" placeholder="Mensaje" rows="4" required></textarea>
+<div id="form-status" class="hidden"></div>
 
-@app.route("/api/users")
-def get_users():
-    if not users:
-        raise Exception("No users")
-    return jsonify(users)`
-  },
-  {
-    language: "java",
-    color: "#f89820",
-    keywords: ["public", "class", "return", "new"],
-    code: `@RestController
-public class UserController {
+      <div class="modal-actions">
+        <button id="submit-btn" type="submit" class="glass-btn">Enviar</button>
+        <button type="button" class="glass-btn secondary" id="close-modal">Cerrar</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-    @GetMapping("/users")
-    public List<User> getUsers() {
-        return service.findAll();
-    }
-}`
-  },
-  {
-    language: "cpp",
-    color: "#5599ff",
-    keywords: ["return", "const", "auto", "if"],
-    code: `#include <vector>
-#include <ranges>
 
-auto filter_even(const std::vector<int>& data) {
-    return data | std::views::filter([](int n){ return n % 2 == 0; });
-}`
-  },
-  {
-    language: "js",
-    color: "#f7df1e",
-    keywords: ["const", "async", "await", "return", "if"],
-    code: `import axios from "axios";
+<!-- ========== SHADERS (NO SE TOCAN EN JS) ========== -->
 
-export async function fetchUsers() {
-    const res = await axios.get("/api/users");
-    return res.data;
-}`
-  }
-];
-let snippetIndex = 0;
-let charIndex = 0;
-let x = 30;
-let y = 50;
-function drawHighlightedLine(line, startX, startY, snippet) {
-  const words = line.split(/(\s+)/);
-  let offsetX = startX;
-  words.forEach(word => {
-    if (snippet.keywords.includes(word.trim())) {
-      ctx.fillStyle = snippet.color;
-    } else {
-      ctx.fillStyle = "#cccccc";
-    }
-    ctx.fillText(word, offsetX, startY);
-    offsetX += ctx.measureText(word).width;
-  });
+<script id="vertexShader" type="x-shader/x-vertex">
+attribute vec2 a_position;
+varying vec2 v_uv;
+
+void main() {
+  v_uv = vec2(a_position.x, -a_position.y) * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
 }
-function drawCode() {
-  ctx.fillStyle = "rgba(13,13,13,0.18)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  const snippet = snippets[snippetIndex];
-  const partial = snippet.code.substring(0, charIndex);
-  const lines = partial.split("\n");
-
-  lines.forEach((line, i) => {
-    drawHighlightedLine(line, x, y + i * fontSize, snippet);
-  });
-
-  charIndex++;
-
-  if (charIndex > snippet.code.length) {
-    charIndex = 0;
-    snippetIndex = (snippetIndex + 1) % snippets.length;
-    x = Math.random() * (canvas.width - 420);
-    y = Math.random() * (canvas.height - 240) + 50;
-  }
-}
-
-setInterval(drawCode, 55);
-
-window.onresize = () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-};
 </script>
+
+<script id="fragmentShader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform sampler2D u_background;
+uniform vec2 u_resolution;
+uniform vec2 u_viewport;
+uniform vec2 u_mouse;
+uniform vec2 u_size;
+uniform vec2 u_imageResolution;
+uniform float u_dpr;
+
+varying vec2 v_uv;
+
+/* ---------- UTIL ---------- */
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+
+  float a = hash(i);
+  float b = hash(i + vec2(1.0,0.0));
+  float c = hash(i + vec2(0.0,1.0));
+  float d = hash(i + vec2(1.0,1.0));
+
+  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);
+}
+
+float roundedBox(vec2 p, vec2 b, float r) {
+  vec2 d = abs(p) - b + r;
+  return length(max(d, 0.0)) - r;
+}
+
+/* ---------- COVER UV ---------- */
+
+vec2 coverUV(vec2 uv, vec2 viewport, vec2 image) {
+  float viewAspect = viewport.x / viewport.y;
+  float imgAspect  = image.x / image.y;
+
+  vec2 scale = vec2(1.0);
+
+  if (viewAspect > imgAspect) {
+    scale.y = imgAspect / viewAspect;
+  } else {
+    scale.x = viewAspect / imgAspect;
+  }
+
+  return clamp((uv - 0.5) * scale + 0.5, 0.001, 0.999);
+}
+
+void main() {
+  vec2 pixel = (v_uv * u_resolution) / u_dpr;
+  vec2 center = u_mouse;
+  vec2 halfSize = u_size * 0.5;
+
+  float dist = roundedBox(pixel - center, halfSize, 22.0);
+
+  vec2 bgUV = coverUV(v_uv, u_viewport, u_imageResolution);
+  vec3 base = texture2D(u_background, bgUV).rgb;
+
+  if (dist > 2.0) {
+    gl_FragColor = vec4(base, 1.0);
+    return;
+  }
+
+  float mask = smoothstep(2.0, -4.0, dist);
+
+  vec2 localUV = (pixel - center) / u_size;
+  vec2 n;
+  n.x = noise(localUV * 12.0);
+  n.y = noise(localUV * 12.0 + 10.0);
+  n = (n - 0.5) * 2.0;
+
+  float edgeBoost = smoothstep(0.0, 0.7, length(localUV));
+  vec2 offset = n * 0.015 * mix(0.7, 1.2, edgeBoost) * mask;
+
+  vec3 refracted = texture2D(u_background, bgUV + offset).rgb;
+
+  vec3 glass = mix(base, refracted, 0.9);
+  glass = mix(glass, vec3(0.92), mask * 0.25);
+
+  gl_FragColor = vec4(glass, 0.88);
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="app.js"></script>
 </body>
-
 </html>
-
