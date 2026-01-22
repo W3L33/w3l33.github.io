@@ -141,7 +141,7 @@ const EMAILJS_CONFIG = {
   publicKey: "xjrJOvmRPX-xOOMhk",
   serviceId: "service_vo1fbe5",
   templateId: "contact_notification"
-  autoResponseTemplateId: "autoresponder"
+  autoResponseTemplateId: "autoresponder";
 };
 
 emailjs.init(EMAILJS_CONFIG.publicKey);
@@ -181,5 +181,6 @@ form.addEventListener("submit", e => {
     submitBtn.disabled = false;
   });
 });
+
 
 
