@@ -139,7 +139,7 @@ modal.addEventListener("click", (e) => {
 });
 const EMAILJS_CONFIG = {
   publicKey: "xjrJOvmRPX-xOOMhk",
-  serviceId: "service_vo1fbe5",
+  serviceId: "service_njndtr9",
   templateId: "contact_notification"
 };
 
@@ -180,6 +180,7 @@ form.addEventListener("submit", e => {
     submitBtn.disabled = false;
   });
 });
+
 
 
 
