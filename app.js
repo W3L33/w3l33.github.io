@@ -4,15 +4,46 @@ const gl = canvas.getContext("webgl", { antialias: true });
 gl.clearColor(0, 0, 0, 1);
 
 function resize() {
+  const vw = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+  const vh = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = innerWidth * dpr;
-  canvas.height = innerHeight * dpr;
-  canvas.style.width = innerWidth + "px";
-  canvas.style.height = innerHeight + "px";
+  canvas.width = vw * dpr;
+  canvas.height = vh * dpr;
+  canvas.style.width = vw + "px";
+  canvas.style.height = vh + "px";
   gl.viewport(0, 0, canvas.width, canvas.height);
 }
 window.addEventListener("resize", resize);
+window.addEventListener("orientationchange", resize);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", resize);
+  window.visualViewport.addEventListener("scroll", resize);
+}
 resize();
+
+document.addEventListener("gesturestart", e => {
+  e.preventDefault();
+});
+document.addEventListener("gesturechange", e => {
+  e.preventDefault();
+});
+document.addEventListener("gestureend", e => {
+  e.preventDefault();
+});
+document.addEventListener(
+  "touchmove",
+  e => {
+    e.preventDefault();
+  },
+  { passive: false }
+);
+document.addEventListener(
+  "wheel",
+  e => {
+    e.preventDefault();
+  },
+  { passive: false }
+);
 
 function compile(type, src) {
   const s = gl.createShader(type);
@@ -56,7 +87,76 @@ gl.uniform1i(gl.getUniformLocation(program, "u_background"), 0);
 const bg = gl.createTexture();
 const img = new Image();
 img.crossOrigin = "anonymous";
-img.src = "https://raw.githubusercontent.com/W3L33/files/refs/heads/main/IMG_0929.png";
+
+const modalGlassCanvas = document.getElementById("modal-glass-canvas");
+const modalContent = document.querySelector(".glass-modal-content");
+let modalGl = null;
+let modalProgram = null;
+let modalBuffer = null;
+let modalBgTex = null;
+let modalPos = -1;
+let modalU_resolution;
+let modalU_viewport;
+let modalU_rect;
+let modalU_imageRes;
+let modalU_sampler;
+
+function compileModalShader(type, src) {
+  const s = modalGl.createShader(type);
+  modalGl.shaderSource(s, src);
+  modalGl.compileShader(s);
+  return s;
+}
+
+function initModalGlassWebGL() {
+  const modalFrag = document.getElementById("modalGlassFragmentShader");
+  if (!modalGlassCanvas || !modalContent || !modalFrag || !modalFrag.textContent.trim()) {
+    return;
+  }
+  modalGl = modalGlassCanvas.getContext("webgl", {
+    alpha: true,
+    premultipliedAlpha: false,
+    antialias: true
+  });
+  if (!modalGl) return;
+
+  modalProgram = modalGl.createProgram();
+  modalGl.attachShader(
+    modalProgram,
+    compileModalShader(modalGl.VERTEX_SHADER, vertexShader.textContent)
+  );
+  modalGl.attachShader(
+    modalProgram,
+    compileModalShader(modalGl.FRAGMENT_SHADER, modalFrag.textContent)
+  );
+  modalGl.linkProgram(modalProgram);
+  if (!modalGl.getProgramParameter(modalProgram, modalGl.LINK_STATUS)) {
+    console.error(modalGl.getProgramInfoLog(modalProgram));
+    modalProgram = null;
+    return;
+  }
+
+  modalBuffer = modalGl.createBuffer();
+  modalGl.bindBuffer(modalGl.ARRAY_BUFFER, modalBuffer);
+  modalGl.bufferData(
+    modalGl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+    modalGl.STATIC_DRAW
+  );
+
+  modalPos = modalGl.getAttribLocation(modalProgram, "a_position");
+  modalU_resolution = modalGl.getUniformLocation(modalProgram, "u_resolution");
+  modalU_viewport = modalGl.getUniformLocation(modalProgram, "u_viewport");
+  modalU_rect = modalGl.getUniformLocation(modalProgram, "u_rect");
+  modalU_imageRes = modalGl.getUniformLocation(modalProgram, "u_imageResolution");
+  modalU_sampler = modalGl.getUniformLocation(modalProgram, "u_background");
+
+  modalBgTex = modalGl.createTexture();
+  modalGl.enable(modalGl.BLEND);
+  modalGl.blendFunc(modalGl.SRC_ALPHA, modalGl.ONE_MINUS_SRC_ALPHA);
+}
+
+initModalGlassWebGL();
 
 img.onload = () => {
   gl.bindTexture(gl.TEXTURE_2D, bg);
@@ -67,7 +167,41 @@ img.onload = () => {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
   gl.uniform2f(u_imageRes, img.width, img.height);
+
+  if (modalGl && modalBgTex && modalProgram) {
+    modalGl.bindTexture(modalGl.TEXTURE_2D, modalBgTex);
+    modalGl.texImage2D(
+      modalGl.TEXTURE_2D,
+      0,
+      modalGl.RGBA,
+      modalGl.RGBA,
+      modalGl.UNSIGNED_BYTE,
+      img
+    );
+    modalGl.texParameteri(
+      modalGl.TEXTURE_2D,
+      modalGl.TEXTURE_MIN_FILTER,
+      modalGl.LINEAR
+    );
+    modalGl.texParameteri(
+      modalGl.TEXTURE_2D,
+      modalGl.TEXTURE_MAG_FILTER,
+      modalGl.LINEAR
+    );
+    modalGl.texParameteri(
+      modalGl.TEXTURE_2D,
+      modalGl.TEXTURE_WRAP_S,
+      modalGl.CLAMP_TO_EDGE
+    );
+    modalGl.texParameteri(
+      modalGl.TEXTURE_2D,
+      modalGl.TEXTURE_WRAP_T,
+      modalGl.CLAMP_TO_EDGE
+    );
+  }
 };
+
+img.src = "https://raw.githubusercontent.com/W3L33/files/refs/heads/main/IMG_0929.png";
 
 const BOX_WIDTH = 420;
 const BOX_HEIGHT = 260;
@@ -75,7 +209,7 @@ const BOX_HEIGHT = 260;
 let current = [innerWidth / 2, innerHeight / 2];
 let target  = [...current];
 
-canvas.addEventListener("mousemove", e => {
+function updateLensTarget(clientX, clientY) {
   const [cx, cy] = current;
   const hw = BOX_WIDTH / 2;
   const hh = BOX_HEIGHT / 2;
@@ -83,16 +217,85 @@ canvas.addEventListener("mousemove", e => {
   let nx = cx;
   let ny = cy;
 
-  if (e.clientX < cx - hw) nx += e.clientX - (cx - hw);
-  if (e.clientX > cx + hw) nx += e.clientX - (cx + hw);
-  if (e.clientY < cy - hh) ny += e.clientY - (cy - hh);
-  if (e.clientY > cy + hh) ny += e.clientY - (cy + hh);
+  if (clientX < cx - hw) nx += clientX - (cx - hw);
+  if (clientX > cx + hw) nx += clientX - (cx + hw);
+  if (clientY < cy - hh) ny += clientY - (cy - hh);
+  if (clientY > cy + hh) ny += clientY - (cy + hh);
 
   target = [nx, ny];
+}
+
+function isContactModalOpen() {
+  const m = document.getElementById("contact-modal");
+  return m && !m.classList.contains("hidden");
+}
+
+function setMainCanvasInteractive(on) {
+  canvas.style.pointerEvents = on ? "auto" : "none";
+}
+
+canvas.addEventListener("mousemove", e => {
+  if (isContactModalOpen()) return;
+  updateLensTarget(e.clientX, e.clientY);
 });
+
+canvas.addEventListener(
+  "touchmove",
+  e => {
+    if (isContactModalOpen()) return;
+    const t = e.touches[0];
+    if (t) updateLensTarget(t.clientX, t.clientY);
+  },
+  { passive: true }
+);
 
 const icons = document.getElementById("icons");
 let last = performance.now();
+
+function drawModalGlass() {
+  const modalEl = document.getElementById("contact-modal");
+  if (
+    !modalGl ||
+    !modalProgram ||
+    !modalBgTex ||
+    !modalContent ||
+    !img.complete ||
+    !modalEl ||
+    modalEl.classList.contains("hidden")
+  ) {
+    return;
+  }
+
+  const r = modalContent.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.floor(r.width * dpr));
+  const h = Math.max(1, Math.floor(r.height * dpr));
+
+  if (modalGlassCanvas.width !== w || modalGlassCanvas.height !== h) {
+    modalGlassCanvas.width = w;
+    modalGlassCanvas.height = h;
+  }
+
+  modalGl.viewport(0, 0, w, h);
+  modalGl.clearColor(0, 0, 0, 0);
+  modalGl.clear(modalGl.COLOR_BUFFER_BIT);
+
+  modalGl.useProgram(modalProgram);
+  modalGl.bindBuffer(modalGl.ARRAY_BUFFER, modalBuffer);
+  modalGl.enableVertexAttribArray(modalPos);
+  modalGl.vertexAttribPointer(modalPos, 2, modalGl.FLOAT, false, 0, 0);
+
+  modalGl.activeTexture(modalGl.TEXTURE0);
+  modalGl.bindTexture(modalGl.TEXTURE_2D, modalBgTex);
+  modalGl.uniform1i(modalU_sampler, 0);
+
+  modalGl.uniform2f(modalU_resolution, w, h);
+  modalGl.uniform2f(modalU_viewport, innerWidth, innerHeight);
+  modalGl.uniform4f(modalU_rect, r.left, r.top, r.width, r.height);
+  modalGl.uniform2f(modalU_imageRes, img.width, img.height);
+
+  modalGl.drawArrays(modalGl.TRIANGLES, 0, 6);
+}
 
 function draw(t) {
   const dt = (t - last) / 1000;
@@ -115,6 +318,8 @@ function draw(t) {
   icons.style.transform =
     `translate(${current[0]}px, ${current[1]}px) translate(-50%, -50%)`;
 
+  drawModalGlass();
+
   requestAnimationFrame(draw);
 }
 
@@ -122,66 +327,25 @@ requestAnimationFrame(draw);
 
 const contactBtn = document.querySelector(".glass-btn:nth-child(3)");
 const modal = document.getElementById("contact-modal");
-const closeModal = document.getElementById("close-modal");
+const closeModalX = document.getElementById("close-modal-x");
+
+function closeContactModal() {
+  modal.classList.add("hidden");
+  setMainCanvasInteractive(true);
+}
 
 contactBtn.addEventListener("click", () => {
   modal.classList.remove("hidden");
+  setMainCanvasInteractive(false);
+  window.dispatchEvent(new CustomEvent("contact-modal-open"));
 });
 
-closeModal.addEventListener("click", () => {
-  modal.classList.add("hidden");
-});
+closeModalX.addEventListener("click", closeContactModal);
 
 modal.addEventListener("click", (e) => {
   if (e.target === modal) {
-    modal.classList.add("hidden");
+    closeContactModal();
   }
 });
-const EMAILJS_CONFIG = {
-  publicKey: "xjrJOvmRPX-xOOMhk",
-  serviceId: "service_njndtr9",
-  templateId: "contact_notification"
-};
-
-emailjs.init(EMAILJS_CONFIG.publicKey);
-
-const form = document.getElementById("contact-form");
-const statusBox = document.getElementById("form-status");
-const submitBtn = document.getElementById("submit-btn");
-
-form.addEventListener("submit", e => {
-  e.preventDefault();
-
-  submitBtn.disabled = true;
-  statusBox.classList.add("hidden");
-
-  emailjs.sendForm(
-    EMAILJS_CONFIG.serviceId,
-    EMAILJS_CONFIG.templateId,
-    form
-  )
-  .then(() => {
-    statusBox.innerHTML =
-      "<p style='color:#4ade80'>Mensaje enviado correctamente ✔</p>";
-    statusBox.classList.remove("hidden");
-    form.reset();
-
-    setTimeout(() => {
-      modal.classList.add("hidden");
-    }, 1200);
-  })
-  .catch(err => {
-    console.error(err);
-    statusBox.innerHTML =
-      "<p style='color:#f87171'>Error al enviar el mensaje</p>";
-    statusBox.classList.remove("hidden");
-  })
-  .finally(() => {
-    submitBtn.disabled = false;
-  });
-});
-
-
-
 
 
