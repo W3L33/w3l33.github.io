@@ -11,19 +11,27 @@
 </head>
 <body>
 
+<div id="page-loader" class="page-loader" aria-busy="true" aria-live="polite">
+  <div class="page-loader__visual" role="presentation">
+    <div class="page-loader__spin" aria-hidden="true"></div>
+    <span id="page-loader-pct" class="page-loader__pct">0%</span>
+  </div>
+  <span class="page-loader__sr">Cargando imagen de fondo…</span>
+</div>
+
 <canvas id="canvas"></canvas>
 
-<div id="icons" class="glass-buttons">
+<div id="icons" class="glass-buttons icons-awaiting-bg">
   <div class="glass-text">
     <h1>WILBERTH ACOSTA</h1>
-<p>Full Stack DEV</p>
+<p>Ced. Prof. 14988635</p>
   </div>
 
   <div class="glass-actions">
- <button class="glass-btn">PRIVATE</button>
+ <button type="button" class="glass-btn" disabled aria-disabled="true">PRIVATE</button>
 
 <a href="https://welee.netlify.app" class="glass-btn-link">   
-    <button class="glass-btn">PUBLIC</button>
+    <button id="btn-public" type="button" class="glass-btn">PUBLIC</button>
 </a>
     <button class="glass-btn">CONTACT</button>
   </div>
@@ -81,6 +89,8 @@ uniform vec2 u_mouse;
 uniform vec2 u_size;
 uniform vec2 u_imageResolution;
 uniform float u_dpr;
+uniform float u_bgReady;
+uniform float u_entranceAlpha;
 
 varying vec2 v_uv;
 
@@ -126,6 +136,11 @@ vec2 coverUV(vec2 uv, vec2 viewport, vec2 image) {
 }
 
 void main() {
+  if (u_bgReady < 0.5) {
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
+
   vec2 pixel = (v_uv * u_resolution) / u_dpr;
   vec2 center = u_mouse;
   vec2 halfSize = u_size * 0.5;
@@ -156,7 +171,9 @@ void main() {
   vec3 glass = mix(base, refracted, 0.9);
   glass = mix(glass, vec3(0.92), mask * 0.25);
 
-  gl_FragColor = vec4(glass, 0.88);
+  vec3 glassShown = mix(base, glass, u_entranceAlpha);
+  float outAlpha = mix(1.0, 0.88, mask * u_entranceAlpha);
+  gl_FragColor = vec4(glassShown, outAlpha);
 }
 </script>
 

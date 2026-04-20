@@ -28,6 +28,15 @@ const submitBtnDefaultLabel = submitBtn.textContent.trim() || "Enviar";
 
 let formSubmitting = false;
 let successReplaceTimer = null;
+const STORAGE_CONTACT_MESSAGE_SENT = "w3l33_contact_message_sent";
+
+function persistContactMessageSent() {
+  try {
+    localStorage.setItem(STORAGE_CONTACT_MESSAGE_SENT, "1");
+  } catch {
+    /* private mode / quota */
+  }
+}
 
 function isValidEmail(value) {
   const v = value.trim();
@@ -234,6 +243,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 window.addEventListener("contact-modal-open", () => {
+  window.__w3l33ContactSentOk = false;
   updateSubmitEnabled();
 });
 
@@ -290,6 +300,8 @@ form.addEventListener("submit", e => {
       });
 
       if (failedJobs.length === 0) {
+        window.__w3l33ContactSentOk = true;
+        persistContactMessageSent();
         writeCooldownUntilMs(Date.now() + COOLDOWN_MS);
         statusBox.innerHTML =
           "<p style='color:#4ade80'>Mensaje enviado correctamente ✔</p>";
