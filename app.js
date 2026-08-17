@@ -3,6 +3,8 @@ const gl = canvas.getContext("webgl", { antialias: true });
 
 gl.clearColor(0, 0, 0, 1);
 
+let loginBgReady = false;
+
 function resize() {
   const vw = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
   const vh = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
@@ -12,6 +14,9 @@ function resize() {
   canvas.style.width = vw + "px";
   canvas.style.height = vh + "px";
   gl.viewport(0, 0, canvas.width, canvas.height);
+  if (loginBgReady) {
+    uploadLoginBackground(false);
+  }
 }
 window.addEventListener("resize", resize);
 window.addEventListener("orientationchange", resize);
@@ -87,61 +92,12 @@ gl.uniform1i(gl.getUniformLocation(program, "u_background"), 0);
 gl.uniform1f(u_bgReadyLoc, 0.0);
 gl.uniform1f(u_entranceAlphaLoc, 1.0);
 
-/* Background image */
+/* Background: CSS login-bg painted to a canvas so the glass shader can sample it */
 const bg = gl.createTexture();
-const img = new Image();
-img.crossOrigin = "anonymous";
 const pageLoader = document.getElementById("page-loader");
 let glassEntranceStart = null;
-const BG_IMAGE_URL =
-  "https://raw.githubusercontent.com/W3L33/files/refs/heads/main/IMG_0929.png";
-let blobUrlToRevoke = null;
-
-function setPageLoaderProgress(pct) {
-  const root = pageLoader;
-  const txt = document.getElementById("page-loader-pct");
-  if (!txt || !root) return;
-  if (pct == null || !Number.isFinite(pct)) {
-    root.classList.add("page-loader--indeterminate");
-    txt.textContent = "…";
-    return;
-  }
-  root.classList.remove("page-loader--indeterminate");
-  const p = Math.max(0, Math.min(100, Math.round(pct)));
-  txt.textContent = `${p}%`;
-}
-
-function loadBackgroundImageDirect() {
-  blobUrlToRevoke = null;
-  setPageLoaderProgress(null);
-  img.src = BG_IMAGE_URL;
-}
-
-function loadBackgroundImageWithProgress() {
-  setPageLoaderProgress(0);
-  const xhr = new XMLHttpRequest();
-  xhr.open("GET", BG_IMAGE_URL);
-  xhr.responseType = "blob";
-  xhr.onprogress = (e) => {
-    if (e.lengthComputable && e.total > 0) {
-      setPageLoaderProgress((100 * e.loaded) / e.total);
-    } else {
-      setPageLoaderProgress(null);
-    }
-  };
-  xhr.onload = () => {
-    if (xhr.status < 200 || xhr.status >= 300) {
-      loadBackgroundImageDirect();
-      return;
-    }
-    const blobUrl = URL.createObjectURL(xhr.response);
-    blobUrlToRevoke = blobUrl;
-    setPageLoaderProgress(100);
-    img.src = blobUrl;
-  };
-  xhr.onerror = () => loadBackgroundImageDirect();
-  xhr.send();
-}
+let bgSource = null;
+let lastLoginBgKey = "";
 const STORAGE_GLASS_ENTRANCE_AT = "w3l33_glass_entrance_at";
 const STORAGE_GLASS_ENTRANCE_SEEN_LEGACY = "w3l33_glass_entrance_seen";
 const GLASS_ENTRANCE_COOLDOWN_MS = 5 * 60 * 1000;
@@ -270,83 +226,111 @@ function initModalGlassWebGL() {
 
 initModalGlassWebGL();
 
-img.onload = () => {
-  if (blobUrlToRevoke) {
-    URL.revokeObjectURL(blobUrlToRevoke);
-    blobUrlToRevoke = null;
-  }
-  gl.useProgram(program);
-  gl.bindTexture(gl.TEXTURE_2D, bg);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+function createLoginBackgroundCanvas() {
+  const vw = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+  const vh = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const source = document.createElement("canvas");
+  source.width = Math.max(1, Math.floor(vw * dpr));
+  source.height = Math.max(1, Math.floor(vh * dpr));
+  const ctx = source.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  gl.uniform2f(u_imageRes, img.width, img.height);
-  gl.uniform1f(u_bgReadyLoc, 1.0);
-  if (!shouldSkipGlassEntrance()) {
-    glassEntranceStart = performance.now();
-  }
+  const fill = ctx.createLinearGradient(0, 0, vw, vh);
+  fill.addColorStop(0, "#030810");
+  fill.addColorStop(0.35, "#061525");
+  fill.addColorStop(0.7, "#0a2340");
+  fill.addColorStop(1, "#071018");
+  ctx.fillStyle = fill;
+  ctx.fillRect(0, 0, vw, vh);
 
-  if (modalGl && modalBgTex && modalProgram) {
-    modalGl.bindTexture(modalGl.TEXTURE_2D, modalBgTex);
-    modalGl.texImage2D(
-      modalGl.TEXTURE_2D,
-      0,
-      modalGl.RGBA,
-      modalGl.RGBA,
-      modalGl.UNSIGNED_BYTE,
-      img
-    );
-    modalGl.texParameteri(
-      modalGl.TEXTURE_2D,
-      modalGl.TEXTURE_MIN_FILTER,
-      modalGl.LINEAR
-    );
-    modalGl.texParameteri(
-      modalGl.TEXTURE_2D,
-      modalGl.TEXTURE_MAG_FILTER,
-      modalGl.LINEAR
-    );
-    modalGl.texParameteri(
-      modalGl.TEXTURE_2D,
-      modalGl.TEXTURE_WRAP_S,
-      modalGl.CLAMP_TO_EDGE
-    );
-    modalGl.texParameteri(
-      modalGl.TEXTURE_2D,
-      modalGl.TEXTURE_WRAP_T,
-      modalGl.CLAMP_TO_EDGE
-    );
+  function drawOrb(x, y, size, color, blurPx) {
+    ctx.save();
+    ctx.filter = "blur(" + blurPx + "px)";
+    const cx = x + size * 0.5;
+    const cy = y + size * 0.5;
+    const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.5);
+    rg.addColorStop(0, color);
+    rg.addColorStop(0.7, "rgba(0, 0, 0, 0)");
+    rg.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = rg;
+    ctx.fillRect(x, y, size, size);
+    ctx.restore();
   }
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      hidePageLoader();
-      const ic = document.getElementById("icons");
-      if (ic) ic.classList.remove("icons-awaiting-bg");
-      startPublicIntroPulse();
-    });
-  });
-};
+  drawOrb(-140, -120, 520, "rgba(30, 74, 140, 0.28)", 40);
+  drawOrb(vw - 300, vh - 320, 400, "rgba(37, 99, 168, 0.18)", 40);
+  drawOrb(vw * 0.95 - 300, vh * 0.4, 300, "rgba(56, 189, 248, 0.08)", 60);
 
-img.addEventListener("error", () => {
-  if (blobUrlToRevoke) {
-    URL.revokeObjectURL(blobUrlToRevoke);
-    blobUrlToRevoke = null;
-    setPageLoaderProgress(0);
-    img.src = BG_IMAGE_URL;
+  ctx.save();
+  ctx.globalAlpha = 0.04;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+  for (let y = 0; y < vh; y += 40) {
+    ctx.fillRect(0, y, vw, 1);
+  }
+  for (let x = 0; x < vw; x += 40) {
+    ctx.fillRect(x, 0, 1, vh);
+  }
+  ctx.restore();
+
+  return source;
+}
+
+function bindBackgroundTexture(glCtx, texture, source) {
+  glCtx.bindTexture(glCtx.TEXTURE_2D, texture);
+  glCtx.texImage2D(
+    glCtx.TEXTURE_2D,
+    0,
+    glCtx.RGBA,
+    glCtx.RGBA,
+    glCtx.UNSIGNED_BYTE,
+    source
+  );
+  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_MIN_FILTER, glCtx.LINEAR);
+  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_MAG_FILTER, glCtx.LINEAR);
+  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_WRAP_S, glCtx.CLAMP_TO_EDGE);
+  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_WRAP_T, glCtx.CLAMP_TO_EDGE);
+}
+
+function uploadLoginBackground(isFirst) {
+  const vw = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+  const vh = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const key = vw + "x" + vh + "@" + dpr;
+  if (!isFirst && key === lastLoginBgKey && bgSource) {
     return;
   }
-  hidePageLoader();
-  gl.useProgram(program);
-  gl.uniform1f(u_bgReadyLoc, 1.0);
-  const ic = document.getElementById("icons");
-  if (ic) ic.classList.remove("icons-awaiting-bg");
-});
+  lastLoginBgKey = key;
 
-loadBackgroundImageWithProgress();
+  const source = createLoginBackgroundCanvas();
+  bgSource = source;
+
+  gl.useProgram(program);
+  bindBackgroundTexture(gl, bg, source);
+  gl.uniform2f(u_imageRes, source.width, source.height);
+  gl.uniform1f(u_bgReadyLoc, 1.0);
+
+  if (modalGl && modalBgTex && modalProgram) {
+    bindBackgroundTexture(modalGl, modalBgTex, source);
+  }
+
+  if (!loginBgReady) {
+    loginBgReady = true;
+    if (!shouldSkipGlassEntrance()) {
+      glassEntranceStart = performance.now();
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        hidePageLoader();
+        const ic = document.getElementById("icons");
+        if (ic) ic.classList.remove("icons-awaiting-bg");
+        startPublicIntroPulse();
+      });
+    });
+  }
+}
+
+uploadLoginBackground(true);
 
 const BOX_WIDTH = 420;
 const BOX_HEIGHT = 260;
@@ -429,7 +413,7 @@ function drawModalGlass() {
     !modalProgram ||
     !modalBgTex ||
     !modalContent ||
-    !img.complete ||
+    !bgSource ||
     !modalEl ||
     modalEl.classList.contains("hidden")
   ) {
@@ -462,7 +446,7 @@ function drawModalGlass() {
   modalGl.uniform2f(modalU_resolution, w, h);
   modalGl.uniform2f(modalU_viewport, innerWidth, innerHeight);
   modalGl.uniform4f(modalU_rect, r.left, r.top, r.width, r.height);
-  modalGl.uniform2f(modalU_imageRes, img.width, img.height);
+  modalGl.uniform2f(modalU_imageRes, bgSource.width, bgSource.height);
 
   modalGl.drawArrays(modalGl.TRIANGLES, 0, 6);
 }

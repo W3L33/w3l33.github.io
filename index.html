@@ -11,12 +11,19 @@
 </head>
 <body>
 
+<div class="login-bg" aria-hidden="true">
+  <div class="login-bg__orb login-bg__orb--tl"></div>
+  <div class="login-bg__orb login-bg__orb--br"></div>
+  <div class="login-bg__orb login-bg__orb--mid"></div>
+  <div class="login-bg__grid"></div>
+</div>
+
 <div id="page-loader" class="page-loader" aria-busy="true" aria-live="polite">
   <div class="page-loader__visual" role="presentation">
     <div class="page-loader__spin" aria-hidden="true"></div>
     <span id="page-loader-pct" class="page-loader__pct">0%</span>
   </div>
-  <span class="page-loader__sr">Cargando imagen de fondo…</span>
+  <span class="page-loader__sr">Cargando…</span>
 </div>
 
 <canvas id="canvas"></canvas>

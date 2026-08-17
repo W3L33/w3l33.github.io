@@ -17,6 +17,60 @@ body {
   inset: 0;
 }
 
+.login-bg {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #030810 0%, #061525 35%, #0a2340 70%, #071018 100%);
+}
+
+.login-bg__orb {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+}
+
+.login-bg__orb--tl {
+  top: -120px;
+  left: -140px;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, rgba(30, 74, 140, 0.28) 0%, transparent 70%);
+}
+
+.login-bg__orb--br {
+  right: -100px;
+  bottom: -80px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(37, 99, 168, 0.18) 0%, transparent 70%);
+}
+
+.login-bg__orb--mid {
+  top: 40%;
+  right: 5%;
+  width: 300px;
+  height: 300px;
+  filter: blur(60px);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+}
+
+.login-bg__grid {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.5) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
 canvas {
   position: fixed;
   inset: 0;
@@ -155,11 +209,11 @@ canvas {
 }
 
 .glass-btn:hover {
-  background: rgba(178, 158, 72, 0.42);
-  border-color: rgba(200, 182, 102, 0.48);
-  color: rgba(255, 252, 238, 0.95);
+  background: rgba(56, 140, 210, 0.32);
+  border-color: rgba(125, 185, 235, 0.42);
+  color: rgba(240, 248, 255, 0.96);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(28, 24, 8, 0.28);
+  box-shadow: 0 8px 20px rgba(8, 24, 48, 0.28);
 }
 
 @keyframes public-intro-pulse {
